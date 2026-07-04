@@ -44,15 +44,17 @@ async function registerUser(req, res) {
         process.env.JWT_SECRET,
     )
 
-    res.cookie("token", token, {
-       httpOnly: true,
-       sameSite: "lax",
-       secure: false,
-       path: '/'
-    });
+     // set secure cookies only in production; allow non-secure for local development
+     res.cookie("token", token, {
+         httpOnly: true,
+         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+         secure: process.env.NODE_ENV === 'production',
+         path: '/'
+     });
 
     res.status(201).json({
         message: "User register successfully",
+        token,
         user: {
             id: user._id,
             username: user.username,
@@ -93,15 +95,17 @@ async function loginUser(req, res) {
         process.env.JWT_SECRET,
     )
 
+    // set secure cookies only in production; allow non-secure for local development
     res.cookie("token", token, {
         httpOnly: true,
-        sameSite: "lax",
-        secure: false,
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: process.env.NODE_ENV === 'production',
         path: '/'
     });
 
     res.status(201).json({
         message: "User login successfully",
+        token,
         user: {
             id: user._id,
             username: user.username,

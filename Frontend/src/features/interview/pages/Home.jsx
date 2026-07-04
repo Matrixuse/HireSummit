@@ -22,7 +22,7 @@ const statusStyles = {
 }
 
 const Home = () => {
-    const { loading, generateReport, reports } = useInterview()
+    const { loading, generateReport, reports, error } = useInterview()
     const { handleLogout } = useAuth()
     const [jobDescription, setJobDescription] = useState("")
     const [selfDescription, setSelfDescription] = useState("")
@@ -34,10 +34,9 @@ const Home = () => {
         const resumeFile = resumeInputRef.current.files[0]
         const data = await generateReport({ jobDescription, selfDescription, resumeFile })
 
-        if (!data || !data._id) {
-            return
+        if (!data?._id) {
+            return  // error already `error` state mein set ho chuka hai, UI mein red box dikha hi raha hai
         }
-
         navigate(`/interview/${data._id}`)
     }
 
@@ -126,7 +125,12 @@ const Home = () => {
             </section>
 
             {/* CTA */}
-            <div className='flex justify-center'>
+            <div className='flex flex-col items-center gap-3'>
+                {error && (
+                    <p className='max-w-2xl text-center text-sm text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3'>
+                        {error}
+                    </p>
+                )}
                 <button
                   onClick={handleGenerateReport}
                   className="px-10 py-3 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition duration-200 shadow-lg shadow-blue-500/20"

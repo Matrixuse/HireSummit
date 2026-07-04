@@ -2,25 +2,30 @@ const pdfParse = require('pdf-parse')  //pdf ka jo data hai ya uske andar ka jo 
 const { generateInterviewReport, generateResumePdf } = require('../services/aiservice')  //generateInterviewReport function ko import karte hai jo ki interview report generate karega
 const interviewReportModel = require('../models/interviewReport.model')
 
-async function generateInterviewReportController(req, res) {                      //ye api interview report banayegi
-// Get the uploaded resume file from the request
-  try{
-    const resumeContent = await (new pdfParse.PDFParse(Uint8Array.from(req.file.buffer))).getText()  // Get the text content from the uploaded PDF resume file using pdf-parse
+async function generateInterviewReportController(req, res) {
+  try {
+    if (!req.file?.buffer) {
+      return res.status(400).json({
+        success: false,
+        message: 'Resume PDF file is required'
+      })
+    }
 
-    const { selfDescription, jobDescription } = req.body // Get the self-description and job description from the request body
+    const parser = new pdfParse.PDFParse({ data: req.file.buffer })
+    const resumeContent = await parser.getText()
+    await parser.destroy()
 
-    const title = jobDescription.substring(0, 60) + "...";
-    
+    const { selfDescription, jobDescription } = req.body
+    const title = jobDescription.substring(0, 60) + "..."
+
     const interViewReportByAi = await generateInterviewReport({
-        resume: resumeContent.text,  // Pass the extracted text from the resume to the AI service, .text nhi likhoge to agar pdf ek page se jyada ki hogi to wo saara text nhi lega
+        resume: resumeContent.text,
         selfdescribe: selfDescription,
         jobdescribe: jobDescription
     })
 
-
     const interviewReport = await interviewReportModel.create({
         title,
-
         user: req.user.id,
         resume: resumeContent.text,
         selfDescription,
@@ -33,9 +38,10 @@ async function generateInterviewReportController(req, res) {                    
         interviewReport
     })
   } catch (err) {
-      return res.status(500).json({
-        success:false,
-        message:err.message
+      const isAuthError = /api key|authentication|unauthenticated|oauth/i.test(err.message || '')
+      return res.status(isAuthError ? 503 : 500).json({
+        success: false,
+        message: err.message
       });
   }
 }
@@ -65,7 +71,7 @@ async function getAllInterviewReportController(req, res) {    //ye api us user k
     .sort({ createdAt: -1 })
     .select("-resume -selfDescription -jobDescription -__v -technicalQuestions -behavioralQuestions -skillGaps -preparationPlan");
 
-    res.status(201).json({
+    res.status(200).json({
         message: "Interview report successfully",
         interviewReports
     })

@@ -1,30 +1,40 @@
 import axios from "axios"
 
+const API_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '')
+
 const api = axios.create({
-    baseURL: "http://localhost:3000/",
+    baseURL: API_URL,
     withCredentials: true
 })
 
-export const generateInterviewReport = async ({ jobDescription, selfDescription, resumeFile}) => {
-    const formData = new FormData()    //resume ya koi file data ke liye form data isliye use kr rhe hai kyuki agar aapko frontend se backend pe file bejni rahti hai to form data me bejte hai
+api.interceptors.request.use(config => {
+    const token = localStorage.getItem('authToken')
+    if (token) {
+        config.headers = config.headers || {}
+        config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+})
 
+export const generateInterviewReport = async ({ jobDescription, selfDescription, resumeFile }) => {
+    const formData = new FormData()
     formData.append("jobDescription", jobDescription)
     formData.append("selfDescription", selfDescription)
     formData.append("resume", resumeFile)
 
-    const response = await api.post("/api/interview/", formData, {
-        headers: {
-            "Content-Type": "multipart/form-data"
-        }
-    })
-
-    return response.data
-
+    try {
+        const response = await api.post("/api/interview/", formData, {
+            headers: { "Content-Type": "multipart/form-data" }
+        })
+        return response.data
+    } catch (err) {
+        const message = err?.response?.data?.message || err?.message || 'Failed to generate interview report'
+        throw new Error(message)
+    }
 }
 
 export const generateInterviewReportById = async (interviewId) => {
     const response = await api.get(`/api/interview/report/${interviewId}`)
-
     return response.data
 }
 
@@ -37,6 +47,5 @@ export const generateResumePdf = async ({ interviewReportId }) => {
     const response = await api.post(`/api/interview/resume/pdf/${interviewReportId}`, null, {
         responseType: "blob"
     })
-
     return response.data
 }
