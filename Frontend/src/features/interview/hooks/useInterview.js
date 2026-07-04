@@ -72,7 +72,9 @@ export const useInterview = () => {
             document.body.removeChild(link)
             window.URL.revokeObjectURL(url)
         }
-        catch (_) {
+        catch (err) {
+            console.error('Failed to download resume PDF:', err)
+            alert('Something went wrong while generating your resume PDF. Please try again in a moment.')
         } finally {
             setLoading(false)
         }

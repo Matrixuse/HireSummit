@@ -197,10 +197,24 @@ ${jobdescribe} `;
 }
 
 async function generatePdfFromHtml(htmlContent) {
-  const browser = await puppeteer.launch()
+  const isProd = process.env.NODE_ENV === 'production'
+  let browser
+
+  if (isProd) {
+    const chromium = require('@sparticuz/chromium')
+    const puppeteerCore = require('puppeteer-core')
+    browser = await puppeteerCore.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    })
+  } else {
+    browser = await puppeteer.launch()
+  }
+
   const page = await browser.newPage()
   await page.setContent(htmlContent, { waitUntil: 'networkidle0' })
-
   const pdfBuffer = await page.pdf({ format: 'A4', margin: { top: '10mm', bottom: '15mm', left: '10mm', right: '10mm' } })
   await browser.close()
 
