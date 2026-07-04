@@ -197,10 +197,10 @@ ${jobdescribe} `;
 }
 
 async function generatePdfFromHtml(htmlContent) {
-  const isProd = process.env.NODE_ENV === 'production'
+  const useLightweightChromium = process.env.RENDER === 'true' || process.env.NODE_ENV === 'production'
   let browser
 
-  if (isProd) {
+  if (useLightweightChromium) {
     const chromium = require('@sparticuz/chromium')
     const puppeteerCore = require('puppeteer-core')
     browser = await puppeteerCore.launch({
